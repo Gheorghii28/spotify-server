@@ -20,7 +20,7 @@ function redirect($url)
 function handleLogin($client_id, $redirect_uri)
 {
     $state = generateRandomString(16);
-    $scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public user-library-read user-top-read user-follow-read user-follow-modify user-read-playback-state user-modify-playback-state user-library-modify';
+    $scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private user-library-read user-top-read user-follow-read user-follow-modify user-read-playback-state user-modify-playback-state user-library-modify';
 
     $queryParams = http_build_query([
         'response_type' => 'code',
@@ -60,15 +60,17 @@ function handleCallback($client_id, $client_secret, $redirect_uri, $domain, $web
     $body = json_decode($response, true);
 
     if ($response !== false && isset($body['access_token'])) {
+        $expirationTime = round(microtime(true) * 1000) + $body['expires_in'] * 1000;
         setcookie('accessToken', $body['access_token'], time() + 3600, '/', $domain, false, false);
         setcookie('refreshToken', $body['refresh_token'], time() + 3600, '/', $domain, false, false);
+        setcookie('expirationTime', $expirationTime, time() + 3600, '/', $domain, false, false);
         redirect($website);
     } else {
         redirect($login_url);
     }
 }
 
-function handleRefreshToken($client_id, $client_secret, $login_url)
+function handleRefreshToken($client_id, $client_secret, $login_url, $domain)
 {
     $input = json_decode(file_get_contents('php://input'), true);
     if (isset($input['query'])) {
@@ -90,12 +92,15 @@ function handleRefreshToken($client_id, $client_secret, $login_url)
     $body = json_decode($response, true);
 
     if ($response !== false && isset($body['access_token'])) {
-        header('Content-Type: application/json');
+        $expirationTime = round(microtime(true) * 1000) + $body['expires_in'] * 1000;
+        setcookie('accessToken', $body['access_token'], time() + 3600, '/', $domain, false, false);
+        setcookie('refreshToken', $body['refresh_token'], time() + 3600, '/', $domain, false, false);
+        setcookie('expirationTime', $expirationTime, time() + 3600, '/', $domain, false, false);
+        header('Content-Type: application/x-www-form-urlencoded');
         echo json_encode($body);
     } else {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to get access token']);
-        redirect($login_url);
+        // redirect($login_url);
     }
 }
-?>
