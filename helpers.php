@@ -63,7 +63,7 @@ function handleCallback($client_id, $client_secret, $redirect_uri, $domain, $web
         $expirationTime = round(microtime(true) * 1000) + $body['expires_in'] * 1000;
         setcookie('accessToken', $body['access_token'], time() + 3600, '/', $domain, false, false);
         setcookie('refreshToken', $body['refresh_token'], time() + 3600, '/', $domain, false, false);
-        setcookie('expirationTime', $expirationTime, time() + 3600, '/', $domain, false, false);
+        setcookie('expirationTime', number_format($expirationTime, 0, '.', ''), time() + 3600, '/', $domain, false, false);
         redirect($website);
     } else {
         redirect($login_url);
